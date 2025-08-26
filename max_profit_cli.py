@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
 """
-Max Profit Solver - Command Line Interface
+Max Profit Solver - Command Line Interface (FIXED VERSION)
 A standalone tool to solve the maximum profit building construction problem.
 """
 
 from typing import Tuple, List, Dict
 import argparse
-#import sys
-#from datetime import datetime
+import sys
+from datetime import datetime
 
 # Building configurations
 BUILDINGS = {
@@ -24,6 +23,8 @@ class MaxProfitSolver:
         """
         Dynamic Programming solution to find maximum profit and ALL optimal solutions
         Key insight: Building earns money for each period it's operational after construction
+        
+        FIXED: Only include buildings that actually earn money (operational_periods > 0)
         """
         # dp[i] = (max_profit, list_of_all_optimal_solutions)
         dp = [(0, [{'Theatre': 0, 'Pub': 0, 'Commercial Park': 0}] )] * (time_units + 1)
@@ -42,22 +43,25 @@ class MaxProfitSolver:
                     operational_periods = time_units - t
                     total_earning = earning * operational_periods
                     
-                    prev_profit, prev_solutions = dp[t - build_time]
-                    new_profit = prev_profit + total_earning
-                    
-                    if new_profit > max_profit:
-                        max_profit = new_profit
-                        best_solutions = []
-                        for prev_solution in prev_solutions:
-                            new_solution = prev_solution.copy()
-                            new_solution[building] += 1
-                            best_solutions.append(new_solution)
-                    elif new_profit == max_profit:
-                        for prev_solution in prev_solutions:
-                            new_solution = prev_solution.copy()
-                            new_solution[building] += 1
-                            if new_solution not in best_solutions:
+                    # FIX: Only consider buildings that will actually earn money
+                    if operational_periods > 0 and total_earning > 0:
+                        prev_profit, prev_solutions = dp[t - build_time]
+                        new_profit = prev_profit + total_earning
+                        
+                        if new_profit > max_profit:
+                            max_profit = new_profit
+                            best_solutions = []
+                            for prev_solution in prev_solutions:
+                                new_solution = prev_solution.copy()
+                                new_solution[building] += 1
                                 best_solutions.append(new_solution)
+                        elif new_profit == max_profit:
+                            for prev_solution in prev_solutions:
+                                new_solution = prev_solution.copy()
+                                new_solution[building] += 1
+                                # FIX: Ensure we don't add duplicate solutions
+                                if new_solution not in best_solutions:
+                                    best_solutions.append(new_solution)
             
             dp[t] = (max_profit, best_solutions)
         
@@ -124,7 +128,7 @@ def format_solution(solution: Dict[str, int]) -> str:
 def print_header():
     """Print application header"""
     print("=" * 80)
-    print("🏗️  MAXIMUM PROFIT BUILDING CONSTRUCTION SOLVER")
+    print("🏗️  MAXIMUM PROFIT BUILDING CONSTRUCTION SOLVER (FIXED)")
     print("=" * 80)
     print("Building Types:")
     for building, config in BUILDINGS.items():
@@ -148,6 +152,8 @@ def print_solution_details(time_units: int, solution: Dict[str, int], solution_i
     # Show construction timeline
     print("\n🏗️  Construction Timeline:")
     current_time = 0
+    total_profit_check = 0
+    
     for building, count in solution.items():
         if count > 0:
             build_time = BUILDINGS[building]['time']
@@ -161,9 +167,12 @@ def print_solution_details(time_units: int, solution: Dict[str, int], solution_i
                 print(f"  {building} #{i+1}: Time {start_time}-{end_time} "
                       f"(Earns ${period_earning:,}/period for {operational_periods} periods = ${total_earning:,})")
                 current_time = end_time
+                total_profit_check += total_earning
     
     if current_time == 0:
         print("  No buildings constructed")
+    
+    print(f"\n💰 Total Profit Verification: ${total_profit_check:,}")
 
 def print_summary(time_units: int, max_profit: int, solutions: List[Dict[str, int]], solver: MaxProfitSolver):
     """Print summary of all solutions"""
@@ -250,7 +259,7 @@ def batch_mode(time_units: int, detailed: bool = False):
 def main():
     """Main function to handle command line arguments and run the solver"""
     parser = argparse.ArgumentParser(
-        description="Maximum Profit Building Construction Solver",
+        description="Maximum Profit Building Construction Solver (FIXED)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -277,7 +286,7 @@ Examples:
     parser.add_argument(
         '--version', 
         action='version', 
-        version='Max Profit Solver v1.0'
+        version='Max Profit Solver v1.1 (Fixed)'
     )
     
     args = parser.parse_args()
@@ -302,4 +311,4 @@ Examples:
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()
